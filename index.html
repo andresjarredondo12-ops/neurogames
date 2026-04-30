@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Entrenamiento Cognitivo</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f0f4f8;
+        text-align: center;
+        margin: 0;
+    }
+
+    h1 {
+        background: #4a90e2;
+        color: white;
+        padding: 15px;
+        margin: 0;
+    }
+
+    #game {
+        padding: 20px;
+    }
+
+    .card {
+        width: 80px;
+        height: 80px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        margin: 5px;
+        background: #4a90e2;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        border-radius: 10px;
+    }
+
+    .hidden {
+        background: #999;
+    }
+
+    button {
+        padding: 12px 20px;
+        font-size: 18px;
+        margin-top: 20px;
+        cursor: pointer;
+    }
+
+    #success {
+        display: none;
+        position: fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background: yellow;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        font-size: 30px;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🧠 Entrenamiento Cognitivo</h1>
+
+<div id="game"></div>
+
+<div id="success">
+    <div>⭐💛 ¡Nivel completado! 💛⭐</div>
+    <button onclick="nextLevel()">Siguiente nivel</button>
+</div>
+
+<script>
+let level = 1;
+let step = 0;
+
+function startLevel() {
+    step = 0;
+    runStep();
+}
+
+function runStep() {
+    document.getElementById("game").innerHTML = "";
+
+    if (step < 2) {
+        memoryGame();
+    } else if (step < 4) {
+        brainExercise();
+    } else {
+        showSuccess();
+    }
+}
+
+function nextStep() {
+    step++;
+    setTimeout(runStep, 500);
+}
+
+function nextLevel() {
+    level++;
+    document.getElementById("success").style.display = "none";
+    startLevel();
+}
+
+/* ---------------- MEMORIA ---------------- */
+
+function memoryGame() {
+    let size = Math.min(4 + level, 12);
+    let values = [];
+
+    for (let i = 0; i < size / 2; i++) {
+        values.push(i);
+        values.push(i);
+    }
+
+    values.sort(() => Math.random() - 0.5);
+
+    let first = null;
+    let lock = false;
+    let matches = 0;
+
+    values.forEach(val => {
+        let div = document.createElement("div");
+        div.className = "card hidden";
+        div.innerText = "?";
+
+        div.onclick = () => {
+            if (lock || !div.classList.contains("hidden")) return;
+
+            div.innerText = val;
+            div.classList.remove("hidden");
+
+            if (!first) {
+                first = div;
+            } else {
+                if (first.innerText === div.innerText) {
+                    matches++;
+                    first = null;
+                    if (matches === size / 2) nextStep();
+                } else {
+                    lock = true;
+                    setTimeout(() => {
+                        div.innerText = "?";
+                        first.innerText = "?";
+                        div.classList.add("hidden");
+                        first.classList.add("hidden");
+                        first = null;
+                        lock = false;
+                    }, 800);
+                }
+            }
+        };
+
+        document.getElementById("game").appendChild(div);
+    });
+}
+
+/* ---------------- EJERCICIOS ---------------- */
+
+function brainExercise() {
+    let type = Math.floor(Math.random() * 3);
+
+    if (type === 0) attentionGame();
+    if (type === 1) mathGame();
+    if (type === 2) sequenceGame();
+}
+
+/* Atención */
+function attentionGame() {
+    let target = Math.floor(Math.random() * 9);
+
+    let text = document.createElement("div");
+    text.innerHTML = `<h2>Toca todos los números ${target}</h2>`;
+    document.getElementById("game").appendChild(text);
+
+    let count = 0;
+    let needed = 5 + level;
+
+    for (let i = 0; i < needed; i++) {
+        let num = Math.floor(Math.random() * 9);
+
+        let btn = document.createElement("button");
+        btn.innerText = num;
+
+        btn.onclick = () => {
+            if (num === target) {
+                btn.disabled = true;
+                count++;
+                if (count === needed) nextStep();
+            }
+        };
+
+        document.getElementById("game").appendChild(btn);
+    }
+}
+
+/* Matemática */
+function mathGame() {
+    let a = Math.floor(Math.random() * (10 + level));
+    let b = Math.floor(Math.random() * (10 + level));
+
+    let correct = a + b;
+
+    let text = document.createElement("h2");
+    text.innerText = `¿Cuánto es ${a} + ${b}?`;
+    document.getElementById("game").appendChild(text);
+
+    for (let i = 0; i < 4; i++) {
+        let val = correct + Math.floor(Math.random() * 5) - 2;
+
+        let btn = document.createElement("button");
+        btn.innerText = val;
+
+        btn.onclick = () => {
+            if (val === correct) nextStep();
+        };
+
+        document.getElementById("game").appendChild(btn);
+    }
+}
+
+/* Secuencia */
+function sequenceGame() {
+    let seq = [];
+    let length = 3 + Math.floor(level / 2);
+
+    for (let i = 0; i < length; i++) {
+        seq.push(Math.floor(Math.random() * 9));
+    }
+
+    let text = document.createElement("h2");
+    text.innerText = "Memoriza esta secuencia:";
+    document.getElementById("game").appendChild(text);
+
+    let seqDiv = document.createElement("div");
+    seqDiv.innerText = seq.join(" ");
+    document.getElementById("game").appendChild(seqDiv);
+
+    setTimeout(() => {
+        seqDiv.innerText = "???";
+
+        let input = document.createElement("input");
+        input.placeholder = "Escribe la secuencia";
+
+        let btn = document.createElement("button");
+        btn.innerText = "Verificar";
+
+        btn.onclick = () => {
+            if (input.value === seq.join("")) nextStep();
+        };
+
+        document.getElementById("game").appendChild(input);
+        document.getElementById("game").appendChild(btn);
+
+    }, 2000);
+}
+
+/* ---------------- SUCCESS ---------------- */
+
+function showSuccess() {
+    document.getElementById("success").style.display = "flex";
+}
+
+/* INICIO */
+startLevel();
+
+</script>
+
+</body>
+</html>
