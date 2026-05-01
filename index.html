@@ -5,87 +5,40 @@
 <title>Entrenamiento Cognitivo PRO</title>
 
 <style>
-body {
-    font-family: Arial;
-    margin: 0;
-    text-align: center;
-    background: #eef2f7;
-}
+body { font-family: Arial; margin:0; text-align:center; background:#eef2f7; }
+h1 { background:#4a90e2; color:white; padding:15px; margin:0; }
 
-h1 {
-    background: #4a90e2;
-    color: white;
-    padding: 15px;
-}
-
-#game {
-    padding: 20px;
-}
+#game { padding:20px; }
 
 .card {
-    width: 70px;
-    height: 70px;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    margin: 5px;
-    background: #4a90e2;
-    color: white;
-    font-size: 22px;
-    border-radius: 10px;
-    cursor: pointer;
+    width:70px;height:70px;display:inline-flex;align-items:center;justify-content:center;
+    margin:5px;background:#4a90e2;color:white;font-size:22px;border-radius:10px;cursor:pointer;
 }
-
-.hidden { background: #999; }
+.hidden { background:#999; }
 
 button {
-    padding: 12px 20px;
-    font-size: 18px;
-    margin: 8px;
-    cursor: pointer;
-    border-radius: 8px;
-    border: none;
+    padding:12px 18px;font-size:18px;margin:8px;border:none;border-radius:8px;cursor:pointer;
 }
 
-.correct { background: green !important; }
-.wrong { background: red !important; }
+.correct { background:green !important; color:white; }
+.wrong { background:red !important; color:white; }
 
-/* Bienvenida */
-#welcome {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background: #4a90e2;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+/* pantallas */
+#welcome, #success {
+    position:fixed;width:100%;height:100%;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
 }
+#welcome { background:#4a90e2;color:white; }
+#success { background:yellow;display:none;overflow:hidden; }
 
-/* Éxito */
-#success {
-    display: none;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background: yellow;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 28px;
-    overflow: hidden;
-}
-
-/* Animación */
+/* animacion */
 .fall {
-    position: absolute;
-    font-size: 24px;
-    animation: fall linear infinite;
+    position:absolute;font-size:24px;
+    animation:fall linear infinite;
 }
-
 @keyframes fall {
-    0% { top: -50px; }
-    100% { top: 100%; }
+    0% { top:-50px; }
+    100% { top:100%; }
 }
 </style>
 </head>
@@ -110,42 +63,55 @@ button {
 let level = 1;
 let step = 0;
 let gameActive = false;
+let locked = false;
+let timers = [];
 
-/* ---------- CORE ---------- */
+/* -------- CORE -------- */
 
-function startApp() {
-    document.getElementById("welcome").style.display = "none";
+function startApp(){
+    document.getElementById("welcome").style.display="none";
     startLevel();
 }
 
-function startLevel() {
+function startLevel(){
     step = 0;
     runStep();
 }
 
-function runStep() {
-    clearGame();
+function runStep(){
+    resetAll();
     gameActive = true;
 
-    if (step < 2) memoryGame();
-    else if (step < 4) brainExercise();
+    if(step < 2) memoryGame();
+    else if(step < 4) brainExercise();
     else showSuccess();
 }
 
-function clearGame() {
-    let game = document.getElementById("game");
-    game.innerHTML = "";
+/* -------- RESET TOTAL -------- */
+
+function resetAll(){
+    gameActive = false;
+    locked = false;
+
+    // limpiar timers
+    timers.forEach(t => clearTimeout(t));
+    timers = [];
+
+    // limpiar UI
+    document.getElementById("game").innerHTML = "";
 }
 
-/* ---------- CONTROL ---------- */
+/* -------- CONTROL -------- */
 
-function finishStep() {
-    if (!gameActive) return;
+function finishStep(){
+    if(!gameActive || locked) return;
+
+    locked = true;
     gameActive = false;
 
     let btn = document.createElement("button");
     btn.innerText = "Próximo";
-    btn.onclick = () => {
+    btn.onclick = ()=>{
         step++;
         runStep();
     };
@@ -153,51 +119,49 @@ function finishStep() {
     document.getElementById("game").appendChild(btn);
 }
 
-/* ---------- MEMORIA ---------- */
+/* -------- MEMORIA -------- */
 
-function memoryGame() {
+function memoryGame(){
     let size = Math.min(4 + level, 12);
-    if (size % 2 !== 0) size++;
+    if(size % 2 !== 0) size++;
 
-    let values = [];
-    for (let i = 0; i < size / 2; i++) values.push(i, i);
+    let values=[];
+    for(let i=0;i<size/2;i++) values.push(i,i);
+    values.sort(()=>Math.random()-0.5);
 
-    values.sort(() => Math.random() - 0.5);
+    let first=null, lock=false, matches=0;
 
-    let first = null;
-    let lock = false;
-    let matches = 0;
+    values.forEach(val=>{
+        let div=document.createElement("div");
+        div.className="card hidden";
+        div.innerText="?";
 
-    values.forEach(val => {
-        let div = document.createElement("div");
-        div.className = "card hidden";
-        div.innerText = "?";
+        div.onclick=()=>{
+            if(!gameActive || lock || !div.classList.contains("hidden")) return;
 
-        div.onclick = () => {
-            if (!gameActive || lock || !div.classList.contains("hidden")) return;
-
-            div.innerText = val;
+            div.innerText=val;
             div.classList.remove("hidden");
 
-            if (!first) {
-                first = div;
+            if(!first){
+                first=div;
             } else {
-                if (first.innerText === div.innerText) {
+                if(first.innerText===div.innerText){
                     matches++;
-                    first = null;
+                    first=null;
 
-                    if (matches === size / 2) finishStep();
+                    if(matches===size/2) finishStep();
 
                 } else {
-                    lock = true;
-                    setTimeout(() => {
-                        div.innerText = "?";
-                        first.innerText = "?";
+                    lock=true;
+                    let t=setTimeout(()=>{
+                        div.innerText="?";
+                        first.innerText="?";
                         div.classList.add("hidden");
                         first.classList.add("hidden");
-                        first = null;
-                        lock = false;
-                    }, 700);
+                        first=null;
+                        lock=false;
+                    },700);
+                    timers.push(t);
                 }
             }
         };
@@ -206,85 +170,85 @@ function memoryGame() {
     });
 }
 
-/* ---------- EJERCICIOS ---------- */
+/* -------- EJERCICIOS -------- */
 
-function brainExercise() {
-    let type = Math.floor(Math.random() * 3);
-    if (type === 0) attentionGame();
-    if (type === 1) mathGame();
-    if (type === 2) sequenceGame();
+function brainExercise(){
+    let types=[attentionGame, mathGame, sequenceGame];
+    let fn = types[Math.floor(Math.random()*types.length)];
+    fn();
 }
 
-/* Atención */
-function attentionGame() {
-    let target = Math.floor(Math.random() * 9);
+/* atención */
+function attentionGame(){
+    let target=Math.floor(Math.random()*9);
 
-    let title = document.createElement("h2");
-    title.innerText = `Toca todos los ${target}`;
-    document.getElementById("game").appendChild(title);
+    let title=document.createElement("h2");
+    title.innerText=`Toca todos los ${target}`;
+    game.appendChild(title);
 
-    let total = 10 + level;
-    let needed = Math.floor(total / 2);
+    let total=10;
+    let needed=4;
 
-    let numbers = [];
+    let nums=[];
 
-    for (let i = 0; i < needed; i++) numbers.push(target);
-
-    while (numbers.length < total) {
-        let n = Math.floor(Math.random() * 9);
-        if (n !== target) numbers.push(n);
+    for(let i=0;i<needed;i++) nums.push(target);
+    while(nums.length<total){
+        let n=Math.floor(Math.random()*9);
+        if(n!==target) nums.push(n);
     }
 
-    numbers.sort(() => Math.random() - 0.5);
+    nums.sort(()=>Math.random()-0.5);
 
-    let correct = 0;
+    let correct=0;
 
-    numbers.forEach(num => {
-        let btn = document.createElement("button");
-        btn.innerText = num;
+    nums.forEach(num=>{
+        let btn=document.createElement("button");
+        btn.innerText=num;
 
-        btn.onclick = () => {
-            if (!gameActive || btn.disabled) return;
+        btn.onclick=()=>{
+            if(!gameActive || btn.disabled) return;
 
-            btn.disabled = true;
+            btn.disabled=true;
 
-            if (num === target) {
+            if(num===target){
                 btn.classList.add("correct");
                 correct++;
-                if (correct === needed) finishStep();
+                if(correct===needed) finishStep();
             } else {
                 btn.classList.add("wrong");
             }
         };
 
-        document.getElementById("game").appendChild(btn);
+        game.appendChild(btn);
     });
 }
 
-/* Matemática */
-function mathGame() {
-    let a = Math.floor(Math.random() * (10 + level));
-    let b = Math.floor(Math.random() * (10 + level));
-    let correct = a + b;
+/* matemática */
+function mathGame(){
+    let a=Math.floor(Math.random()*10);
+    let b=Math.floor(Math.random()*10);
+    let correct=a+b;
 
-    let title = document.createElement("h2");
-    title.innerText = `${a} + ${b} = ?`;
-    document.getElementById("game").appendChild(title);
+    let title=document.createElement("h2");
+    title.innerText=`${a} + ${b} = ?`;
+    game.appendChild(title);
 
-    let options = new Set([correct]);
-
-    while (options.size < 4) {
-        options.add(correct + Math.floor(Math.random() * 6) - 3);
+    let options=[correct];
+    while(options.length<4){
+        let n=correct + Math.floor(Math.random()*6)-3;
+        if(!options.includes(n)) options.push(n);
     }
 
-    Array.from(options).forEach(val => {
-        let btn = document.createElement("button");
-        btn.innerText = val;
+    options.sort(()=>Math.random()-0.5);
 
-        btn.onclick = () => {
-            if (!gameActive) return;
+    options.forEach(val=>{
+        let btn=document.createElement("button");
+        btn.innerText=val;
 
-            if (val === correct) {
+        btn.onclick=()=>{
+            if(!gameActive) return;
+
+            if(val===correct){
                 btn.classList.add("correct");
                 finishStep();
             } else {
@@ -292,83 +256,79 @@ function mathGame() {
             }
         };
 
-        document.getElementById("game").appendChild(btn);
+        game.appendChild(btn);
     });
 }
 
-/* Secuencia */
-function sequenceGame() {
-    let seq = [];
-    let len = 3 + Math.floor(level / 2);
+/* secuencia */
+function sequenceGame(){
+    let seq=[];
+    let len=3;
 
-    for (let i = 0; i < len; i++) {
-        seq.push(Math.floor(Math.random() * 9));
-    }
+    for(let i=0;i<len;i++) seq.push(Math.floor(Math.random()*9));
 
-    let text = document.createElement("h2");
-    text.innerText = "Memoriza:";
-    document.getElementById("game").appendChild(text);
+    let text=document.createElement("h2");
+    text.innerText="Memoriza:";
+    game.appendChild(text);
 
-    let display = document.createElement("div");
-    display.innerText = seq.join(" ");
-    document.getElementById("game").appendChild(display);
+    let display=document.createElement("div");
+    display.innerText=seq.join(" ");
+    game.appendChild(display);
 
-    setTimeout(() => {
-        display.innerText = "???";
+    let t=setTimeout(()=>{
+        display.innerText="???";
 
-        let input = document.createElement("input");
+        let input=document.createElement("input");
 
-        let btn = document.createElement("button");
-        btn.innerText = "Verificar";
+        let btn=document.createElement("button");
+        btn.innerText="Verificar";
 
-        btn.onclick = () => {
-            if (!gameActive) return;
+        btn.onclick=()=>{
+            if(!gameActive) return;
 
-            let val = input.value.replace(/\s/g, "");
-            if (val === seq.join("")) finishStep();
+            let val=input.value.replace(/\s/g,"");
+            if(val===seq.join("")) finishStep();
         };
 
-        document.getElementById("game").appendChild(input);
-        document.getElementById("game").appendChild(btn);
+        game.appendChild(input);
+        game.appendChild(btn);
 
-    }, 2000);
+    },2000);
+
+    timers.push(t);
 }
 
-/* ---------- ÉXITO ---------- */
+/* -------- SUCCESS -------- */
 
-function showSuccess() {
-    gameActive = false;
+function showSuccess(){
+    gameActive=false;
 
-    let success = document.getElementById("success");
-    success.style.display = "flex";
+    let s=document.getElementById("success");
+    s.style.display="flex";
 
-    document.getElementById("successText").innerText =
-        `⭐ Felicidades! Nivel ${level} completado 💛`;
+    document.getElementById("successText").innerText=
+        `⭐ Felicidades! Superaste el nivel ${level} 💛`;
 
-    createRain();
+    rain();
 }
 
-function createRain() {
-    let container = document.getElementById("success");
+function rain(){
+    let c=document.getElementById("success");
 
-    for (let i = 0; i < 30; i++) {
-        let el = document.createElement("div");
-        el.className = "fall";
-        el.innerText = Math.random() > 0.5 ? "⭐" : "💛";
-        el.style.left = Math.random() * 100 + "%";
-        el.style.animationDuration = (2 + Math.random() * 3) + "s";
-        container.appendChild(el);
+    for(let i=0;i<30;i++){
+        let e=document.createElement("div");
+        e.className="fall";
+        e.innerText=Math.random()>0.5?"⭐":"💛";
+        e.style.left=Math.random()*100+"%";
+        e.style.animationDuration=(2+Math.random()*3)+"s";
+        c.appendChild(e);
     }
 }
 
-function nextLevel() {
-    let success = document.getElementById("success");
-    success.style.display = "none";
-
-    success.innerHTML = `
-        <h2 id="successText"></h2>
-        <button onclick="nextLevel()">Próximo nivel</button>
-    `;
+function nextLevel(){
+    let s=document.getElementById("success");
+    s.style.display="none";
+    s.innerHTML='<h2 id="successText"></h2><button onclick="nextLevel()">Próximo nivel</button>';
 
     level++;
     startLevel();
